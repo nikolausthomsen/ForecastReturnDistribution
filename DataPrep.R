@@ -10,8 +10,7 @@ source(file.path(func_path,"func_DataPrep.R"))
 library(tidyr)
 
 # read data
-creationDataDate <- "2022_04_26"
-dat <- readRDS(paste0(creationDataDate,"_rawData.rds"))
+dat <- readRDS(paste0(creationDataDate,"rawData.rds"))
 
 
 

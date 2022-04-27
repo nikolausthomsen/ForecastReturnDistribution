@@ -56,7 +56,7 @@ tq_get <- function(x, get = "stock.prices", complete_cases = TRUE, ...){
       data <- tryCatch(
         tidyquant::tq_get(x_i, get = get, complete_cases = complete_cases, ...) %>% 
           group_by(date) %>% slice(1) %>% ungroup(),
-        error   = function(e) cat("Error while downloading ",x_i,"\n", sep=""),
+        error   = function(e) cat("Error while downloading   ",x_i,"\n", sep=""),
         warning = function(e) cat("Warning while downloading ",x_i,"\n", sep="")
       )
       return(data)
