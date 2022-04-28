@@ -20,7 +20,10 @@ library(stringr)
 creationDataDate <- "2022_04_26_"
 
 # set number of forecasts
-n_fc <- 10
+n_fc <- sum(timeDate::isBizday(
+  timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
+                              to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
+                              by=1))))
 
 
 
@@ -56,7 +59,7 @@ DRF <- list(
   window.size = 1e3,
   n_fc = n_fc,
   refit.every = 1,
-  n_lags = 3,
+  n_lags = 3, # note that n_lags=1 if corsi.freq!="" automatically
   absolute.inputs = TRUE,
   corsi.freq = "m",
   q = c(.05,.95)
