@@ -13,11 +13,14 @@ coding_path <- "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistri
 setwd(input_path)
 
 # packages that are always required
-library(dplyr)
+library(dplyr, quietly = TRUE)
 library(stringr)
 
 # set suffix for the data that is generated
 creationDataDate <- "2022_04_26_"
+
+# set number of forecasts
+n_fc <- 10
 
 
 
@@ -39,8 +42,22 @@ sGarch <- list(
   garchOrder = c(1,1),
   shape = 8,
   window.size = 1e3,
-  n_fc = 10,
+  n_fc = n_fc,
   refit.every = 1,
   refit.window = "moving"
 )
 
+
+
+##### DRF Model #####
+
+DRF <- list(
+  splitting.rule = "CART",
+  window.size = 1e3,
+  n_fc = n_fc,
+  refit.every = 1,
+  n_lags = 3,
+  absolute.inputs = TRUE,
+  corsi.freq = "m",
+  q = c(.05,.95)
+)

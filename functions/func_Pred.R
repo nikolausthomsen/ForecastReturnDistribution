@@ -1,4 +1,4 @@
-# functions for prediction and evaluation (HS.R,...)
+# functions for prediction and evaluation (HS.R,Garch.R,DRF.R)
 
 
 ##### Prediction Functions #####
@@ -39,6 +39,136 @@ garch <- function(spec, data, n.ahead = 1, forecast.length = 500,
   
 }
 
+fitDRF <- function(dataMat, yColIdx, h,
+                   lag = 3,
+                   num.fc = 1,
+                   abs.inputs=FALSE,
+                   functional=NULL,
+                   quantiles=NULL,...){
+  # dimension of input matrix
+  d <- if(is.matrix(dataMat)) ncol(dataMat) else 1
+  
+  # create the lagged data
+  aux <- embed(dataMat,lag+h)
+  n   <- nrow(aux)
+  Y   <- aux[1:(n+1-num.fc),yColIdx]
+  # help random forest with absolute return values if requested
+  if(abs.inputs) aux <- abs(aux)
+  X   <- aux[1:(n+1-num.fc),-(1:(d*h))]
+  
+  # fit the model
+  model.fit <- drf::drf(X=X,Y=Y,...)
+  
+  # prediction matrix to predict t+h
+  if(num.fc==1){
+    Xpred <- t(tail(aux,1)[,1:ncol(X)])
+  }else{
+    Xpred <- tail(aux,num.fc)[,1:ncol(X)]
+  }
+  
+  # predict
+  Ypred <- predict(model.fit,Xpred,functional = functional,quantiles=quantiles)
+  
+  # case distribution is requested, we also return
+  # mean, sd, and quantiles if they are available
+  if( is.null(functional) && !is.null(quantiles) ){
+    tmp_ncol <- length(quantiles)+2
+    tmp_summary <- matrix(NA,nrow = num.fc,ncol = tmp_ncol)
+    colnames(tmp_summary) <- c("mean","sd",paste0("q",quantiles))
+    tmp_summary[,1  ] <- predict(model.fit,Xpred, functional = "mean")$mean %>% 
+      as.numeric()
+    tmp_summary[,2  ] <- predict(model.fit,Xpred, functional = "sd")$sd %>% 
+      as.numeric()
+    tmp_summary[,3:tmp_ncol] <- predict(model.fit,Xpred, functional = "quantile",
+                                        quantiles=quantiles)$quantile %>% as.numeric()
+    Ypred$summary <- tmp_summary
+  }
+  
+  
+  return(list(model=model.fit,Ypred=Ypred))
+}
+
+fitroll <- function(func,data,
+                    target.name,
+                    lag = 3,
+                    window.size = 250,
+                    n.ahead = 1,
+                    forecast.length = 1,
+                    refit.every = 1,
+                    refit.window = "moving",
+                    crps = TRUE,
+                    functional = NULL,
+                    quantiles = NULL,
+                    abs.inputs=FALSE,
+                    ...){
+  # split data into matrix and date
+  dataDate <- data %>% arrange(date) %>% pull(date) %>% as.Date()
+  dataMat  <- data %>% arrange(date) %>% select(-date) %>% as.matrix()
+  # names without date
+  nam <- colnames(dataMat)
+  # index of the dependent column
+  yColIdx <- which(nam==target.name)
+  # rows in dataMat
+  N <- nrow(dataMat)
+  
+  # initialize matrices
+  p_out      <- 2+ifelse(is.null(quantiles),0,2+length(quantiles))+ifelse(crps,1,0)
+  resultMat  <- matrix(NA_real_,nrow = forecast.length, ncol = p_out)
+  resultDate <- character(forecast.length) %>% as.Date()
+  
+  # iterate through the forecast length
+  for(fc_idx in seq(forecast.length,1,by=-refit.every)){
+    # for the most recent fit we don't need to predict "refit.every" forecasts
+    tmp_num.fc <- if(fc_idx<refit.every) fc_idx else refit.every
+    # when data for forecast ends (the additional tmp_num.fc obs are not used 
+    # for training, but rather for evaluation)
+    tmp_endIdx <- N-n.ahead-fc_idx+tmp_num.fc
+    # when data for forecast begins (we need additional lag+n.ahead-1 obs 
+    # because of the lag operators in embed(.) in fitDRF)
+    tmp_begIdx <- N-n.ahead-fc_idx-window.size-lag-n.ahead+3
+    if(tmp_begIdx<1 || refit.window=="recursive" ) tmp_begIdx <- 1
+    # prepare a slice index (we need additional lag+n.ahead+1 observations 
+    # because of the lag operators in embed(.) in fitDRF)
+    idx <- tmp_begIdx:tmp_endIdx
+    # fill index for matrices
+    tmp_fill_idx <- forecast.length-(fc_idx:(fc_idx-tmp_num.fc+1))+1
+    # prediction date(s)
+    resultDate[tmp_fill_idx] <- dataDate[tmp_endIdx+n.ahead-((tmp_num.fc-1):0)]
+    if( crps ){
+      # fit distributional random forest
+      tmp <- fitDRF(dataMat[idx,],yColIdx,n.ahead,lag,tmp_num.fc,functional = NULL,
+                    quantiles = quantiles,abs.inputs=abs.inputs,...)$Ypred
+      # realized value
+      y <- dataMat[tmp_endIdx+n.ahead-((tmp_num.fc-1):0),yColIdx]
+      # real window size
+      tmp_real_window <- tmp$weights@Dim[2]
+      # yhat weights
+      w_yhat <- matrix(tmp$weights,nrow=tmp_num.fc, ncol=tmp_real_window)
+      if(fc_idx!=forecast.length && tmp_real_window!=window.size) stop()
+      # yhat coefs (repeat the values of yhat in each row)
+      yhat <- matrix(tmp$y, nrow=tmp_num.fc, ncol=tmp_real_window, byrow=TRUE)
+      # save realized values
+      resultMat[tmp_fill_idx,1] <- y
+      # compute and save crps
+      resultMat[tmp_fill_idx,2] <- scoringRules::crps_sample(y,yhat,w=w_yhat)
+      # compute the PIT values
+      resultMat[tmp_fill_idx,3] <- pitDRF(y,yhat,w_yhat)
+      
+      # output
+      if( !is.null(quantiles) ){
+        resultMat[tmp_fill_idx,3+1:(2+length(quantiles))] <- tmp$summary
+      }
+    }else{
+      stop("Not implemented yet")
+    }
+    
+  }
+  colnames(resultMat) <- c("realized",if(crps)c("crps","PIT",colnames(tmp$summary)) else colnames(tmp$summary))
+  
+  # output data.frame
+  data.frame(resultMat, row.names = resultDate)
+  
+}
 
 ##### Evaluation Metrics #####
 
