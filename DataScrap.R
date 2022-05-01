@@ -99,4 +99,6 @@ dat <- dat %>% filter(na_frac < 1)
 ##### Save Data set #####
 
 # save data
-saveRDS(dat, file=paste0(str_replace_all(Sys.Date(),"-","_"),"_rawData.rds"))
+creationDataDate <- paste0(str_replace_all(Sys.Date(),"-","_"),"_")
+saveRDS(dat, file=paste0(creationDataDate,"rawData.rds"))
+save(creationDataDate, file="creationDataDate")

@@ -18,7 +18,7 @@ garch <- function(spec, data, n.ahead = 1, forecast.length = 500,
     )@forecast$density[,c("Mu","Sigma","Shape","Realized")],
     error = function(e) tmp <- NULL
   )
-  if(!is.null(tmp)){
+  if(is.null(tmp)){
     # try other solver options
     for(solver_option in 1:4){
       tmp <- tryCatch(

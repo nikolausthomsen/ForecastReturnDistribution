@@ -50,7 +50,7 @@ if(max(tsQuality$numNAbtwTSstartend)>0){
   
   # impute missing values with most recent observation
   dat <- dat %>% arrange(date) %>% 
-    fill(name_NA)
+    fill(all_of(name_NA))
   
   # check if imputation is complete
   tsFillQuality <- TSnaInfo(dat,"date")
@@ -61,5 +61,5 @@ if(max(tsQuality$numNAbtwTSstartend)>0){
 
 ##### Save Data #####
 
-saveRDS(dat, file=paste0(creationDataDate,"_NAFilledData.rds"))
+saveRDS(dat, file=paste0(creationDataDate,"NAFilledData.rds"))
 

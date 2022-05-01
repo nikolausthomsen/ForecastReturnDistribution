@@ -58,7 +58,7 @@ real_nfc_sum <- sum(real_nfc[name_target])
 # initialize result matrix
 tmp_n_res <- real_nfc_sum*length(DRF$splitting.rule)
 fc_drfMat <- matrix(NA_real_,nrow = tmp_n_res, ncol = 3+ifelse(is.null(DRF$q),0,2+length(DRF$q)))
-colnames(fc_drfMat) <- if(is.null(DRF$q)) c("realized","crps","PIT") else c("realized","crps","PIT","mean","sd",paste0("q",DRF$q))
+colnames(fc_drfMat) <- if(is.null(DRF$q)) c("Realized","crps","PIT") else c("Realized","crps","PIT","mean","sd",paste0("q",DRF$q))
 fc_drfChar <- matrix(NA_character_,nrow = tmp_n_res, ncol = 3)
 colnames(fc_drfChar) <- c("date","Name","Split")
 
@@ -66,7 +66,7 @@ colnames(fc_drfChar) <- c("date","Name","Split")
 cnt <- 1
 
 # parallel computation
-cl <-  makeCluster(detectCores()-4, outfile=paste0(creationDataDate,"LOG_Fc_Window",DRF$window.size,"_Nfc",DRF$n_fc,".txt"))
+cl <-  makeCluster(detectCores()-4, outfile=paste0(creationDataDate,"LOG_DRF_FcW",DRF$window.size,"Nfc",DRF$n_fc,".txt"))
 doSNOW::registerDoSNOW(cl)
 
 # set up progress bar
@@ -119,9 +119,9 @@ print(Sys.time()-tic)
 fc_drf <- data.frame(fc_drfChar,fc_drfMat) %>% 
   mutate(date=as.Date(date),
          Name = str_remove(Name,"^adjusted\\_"),
-         crps.norm = scoringRules::crps_norm(realized,mean,sd)) %>% 
+         crps.norm = scoringRules::crps_norm(Realized,mean,sd)) %>% 
   na.omit
 
 # save drf forecasts
-save(fc_drf, file = paste0(creationDataDate,"DRF_Var_Fc_Window",DRF$window.size,
-                           "_Nfc",n_fc,"_Corsi",DRF$corsi.freq,"_Var14.RData"))
+save(fc_drf, file = paste0(creationDataDate,"DRF_Var14_FcW",DRF$window.size,
+                           "Nfc",DRF$n_fc,"Corsi",DRF$corsi.freq,".RData"))

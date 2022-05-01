@@ -128,17 +128,25 @@ for(w in sGarch$window.size){
   # evaluate forecasts
   fc_garch <- fc_garch %>% 
     mutate(
+      date = as.Date(date),
       Name = str_remove(Name,"^adjusted\\_"),
       crps = if_else(str_detect(Model,"ngarch"),
                      crps_norm(Realized,Mu,Sigma),
                      crps_t(Realized,Shape,Mu,Sigma)),
       PIT = if_else(str_detect(Model,"ngarch"),
                     pnorm(Realized,Mu,Sigma),
-                    pdist("std",Realized,Mu,Sigma,shape=Shape))
+                    pdist("std",Realized,Mu,Sigma,shape=Shape)),
+      q1 = if_else(str_detect(Model,"ngarch"),
+                   qnorm(sGarch$q[1],Mu,Sigma),
+                   qdist("std",sGarch$q[1],Mu,Sigma,shape = Shape)),
+      q2 = if_else(str_detect(Model,"ngarch"),
+                   qnorm(sGarch$q[2],Mu,Sigma),
+                   qdist("std",sGarch$q[2],Mu,Sigma,shape = Shape))
     )
+  colnames(fc_garch)[ncol(fc_garch)-1:0] <- paste0("q",sGarch$q)
   
   # save garch forecasts
-  save(fc_garch, file = paste0(creationDataDate,"GarchFc_Window",w,"_Nfc",sGarch$n_fc,".RData"))
+  save(fc_garch, file = paste0(creationDataDate,"Garch_FcW",w,"Nfc",sGarch$n_fc,".RData"))
 }
 
 # close clusters

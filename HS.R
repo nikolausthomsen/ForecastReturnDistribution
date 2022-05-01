@@ -43,5 +43,5 @@ for(w in HS$window.size){
     ) %>% 
     na.omit() %>% ungroup()
   colnames(fc_HS)[6:7] <- paste0("q",HS$q)
-  save(fc_HS, file = paste0(creationDataDate,"HS_Fc_Window",w,".RData"))
+  save(fc_HS, file = paste0(creationDataDate,"HS_FcW",w,".RData"))
 }
