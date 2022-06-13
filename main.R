@@ -17,3 +17,6 @@ source(file.path(coding_path,"Garch.R"))
 
 # predict via drf
 source(file.path(coding_path,"DRF.R"))
+
+# evaluate results
+source(file.path(coding_path,"Results.R"))

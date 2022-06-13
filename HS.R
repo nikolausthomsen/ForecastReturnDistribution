@@ -9,8 +9,8 @@ source(file.path(func_path,"func_Pred.R"))
 # load packages
 library(tidyr)
 library(scoringRules)
-library(RcppRoll)
-library(roll)
+library(RcppRoll, quietly = TRUE)
+library(roll, quietly = TRUE)
 
 # read data
 dat <- readRDS(paste0(creationDataDate,"NAFilledData.rds"))

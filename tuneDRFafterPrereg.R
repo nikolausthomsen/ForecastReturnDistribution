@@ -1,4 +1,7 @@
-# DRF Model
+# tuned DRF model to come up with advancter model than in preregistration
+
+# - USE THE SPARSE VERSION OF INPUTS AFTER SEEING THE FEATURE IMPORTANCE FROM UNKNOWN TEST SET
+# - TUNE mty AND min.node.size ON KNOWN TEST SET
 
 # run config file
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
@@ -6,16 +9,36 @@ source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 # import prediction and evaluation functions
 source(file.path(func_path,"func_Pred.R"))
 
-# do parallel processing?
-parallel <- FALSE
+# faster performance (otherwise tuning would take much longer)
+permitSmallerW <- FALSE
+DRF <- list(
+  splitting.rule = "CART",
+  window.size = 1000,
+  num.trees = c(500,1000,1500),
+  min.node.size = c(15,20),
+  mtry = c(floor(sqrt(9)),5,min(ceiling(sqrt(9) + 20), 9)),
+  n_fc = 250,
+  refit.every = 50,
+  n_lags = 1,
+  absolute.inputs = TRUE,
+  corsi.freq = "m",
+  q = c(.05,.95)
+)
 
 # load packages
 library(RcppRoll)
 library(progress)
 library(foreach)
 
-# read data
-dat <- readRDS(paste0(creationDataDate,"NAFilledData.rds"))
+# read data without the unknown test set
+dat <- readRDS(paste0(str_remove(input_path,"ForecastReturnDistribution"),"2022_03_31_NAFilledData.rds"))
+
+# now select only R, HML, and IXIC as predictors
+name_dat <- names(dat)
+dat <- dat %>% select(all_of(c("date",
+                               str_subset(name_dat,"^adjusted\\_"),
+                               str_subset(name_dat,"^highMlow\\_"),
+                               "IXIC")))
 
 # incorporate corsi variables
 if(DRF$corsi.freq=="w"){
@@ -56,9 +79,14 @@ target_idx <- which(name_dat %in% paste0("adjusted_",Nasdaq100))
 name_target <- name_dat[target_idx]
 p_target <- length(name_target)
 
-# get vola variable names
-name_vola <- paste0(rep(c("DJI","IXIC","RUT","SPX","VIXCLS","VXNCLS","VXDCLS"),each=3),rep(c("","_w","_m"),7))
+# get vola variable names ONLY IXIC variable
+name_vola <- paste0(rep(c("IXIC"),each=3),rep(c("","_w","_m"),1))
 
+# set up for grid
+gridRF <- expand.grid(num.trees=DRF$num.trees,
+                      min.node.size=DRF$min.node.size,
+                      mtry=DRF$mtry)
+n_grid <- nrow(gridRF)
 
 # initialize stuff
 n_dat <- nrow(dat)
@@ -67,27 +95,19 @@ real_nfc_cumsum <- c(0,cumsum(real_nfc[name_target]))
 real_nfc_sum <- as.numeric(real_nfc_cumsum[p_target+1])
 
 # initialize result matrix
-tmp_n_res <- real_nfc_sum*length(DRF$splitting.rule)
-fc_drfMat <- matrix(NA_real_,nrow = tmp_n_res, ncol = 3+ifelse(is.null(DRF$q),0,2+length(DRF$q)))
-colnames(fc_drfMat) <- if(is.null(DRF$q)) c("Realized","crps","PIT") else c("Realized","crps","PIT","mean","sd",paste0("q",DRF$q))
+tmp_n_res <- real_nfc_sum*length(DRF$splitting.rule)*n_grid
+fc_drfMat <- matrix(NA_real_,nrow = tmp_n_res, ncol = 6+ifelse(is.null(DRF$q),0,2+length(DRF$q)))
+colnames(fc_drfMat) <- if(is.null(DRF$q)) c("num.trees","min.node.size","mtry","Realized","crps","PIT") else c("num.trees","min.node.size","mtry","Realized","crps","PIT","mean","sd",paste0("q",DRF$q))
 fc_drfChar <- matrix(NA_character_,nrow = tmp_n_res, ncol = 3)
 colnames(fc_drfChar) <- c("date","Name","Split")
 
-# count number of nonparallel loops
-cnt <- 1
 
 # set up progress bar
-pb <- progress_bar$new(total=length(DRF$splitting.rule)*p_target+.001,
+pb <- progress_bar$new(total=length(DRF$splitting.rule)*p_target*n_grid+.001,
                        format = "[:bar]:percent, Time: :elapsed", 
                        clear = FALSE)
 pb$tick(0)
 
-# parallel computation
-if(parallel){
-  cl <-  makeCluster(detectCores()-4, outfile=paste0(creationDataDate,"LOG_DRF_FcW",DRF$window.size,"Nfc",DRF$n_fc,".txt"))
-  doSNOW::registerDoSNOW(cl)
-  ots <- list(progress=function() pb$tick())
-}
 
 
 # stopwatch
@@ -95,41 +115,18 @@ tic <- Sys.time()
 
 # predict via drf
 for(splitting.rule in DRF$splitting.rule){
-  if(parallel){
-    fc_drf_roll <- tryCatch(
-      foreach(i = 1:p_target,.packages = c("dplyr","stringr"),
-              .combine = "rbind",.options.snow=ots) %dopar% {
-                target <- name_target[i]
-                incl_var <- c("date",name_vola,str_subset(name_dat,str_remove(target,"^adjusted\\_")))
-                tryCatch(data.frame(
-                  fitroll(fitDRF,dat[beginIdx[target]:endIdx[target],incl_var],target,
-                          lag = DRF$n_lags, forecast.length = real_nfc[target],
-                          window.size = DRF$window.size, refit.every = DRF$refit.every,
-                          crps = TRUE, quantiles = DRF$q, abs.inputs = DRF$absolute.inputs,
-                          splitting.rule=splitting.rule),
-                  Name = target),
-                  error=function(e){print(e); NULL}
-                )
-              }, error=function(e){print(e); NULL}
-    )
-    
-    # assign to result matrix
-    if(!is.null(fc_drf_roll)){
-      tmp_fill_idx <- ((cnt-1)*real_nfc_sum+1):((cnt-1)*real_nfc_sum+nrow(fc_drf_roll))
-      fc_drfMat[tmp_fill_idx,  ] <- fc_drf_roll %>% select(-Name) %>% as.matrix()
-      fc_drfChar[tmp_fill_idx,1] <- substr(rownames(fc_drf_roll),1,10)
-      fc_drfChar[tmp_fill_idx,2] <- fc_drf_roll$Name
-      fc_drfChar[tmp_fill_idx,3] <- splitting.rule
-    }
-  }else{
-    for(i in 1:p_target){
-      target <- name_target[i]
-      incl_var <- c("date",name_vola,str_subset(name_dat,str_remove(target,"^adjusted\\_")))
+  for(i in 80:p_target){
+    target <- name_target[i]
+    incl_var <- c("date",name_vola,str_subset(name_dat,str_remove(target,"^adjusted\\_")))
+    for(grid_idx in 1:n_grid){
       fc_drf_roll <- tryCatch(fitroll(fitDRF,dat[beginIdx[target]:endIdx[target],incl_var],target,
                                       lag = DRF$n_lags, forecast.length = real_nfc[target],
                                       window.size = DRF$window.size, refit.every = DRF$refit.every,
                                       crps = TRUE, quantiles = DRF$q, abs.inputs = DRF$absolute.inputs,
-                                      splitting.rule=splitting.rule),
+                                      splitting.rule=splitting.rule,mtry=gridRF$mtry[grid_idx],
+                                      min.node.size=gridRF$min.node.size[grid_idx],
+                                      num.trees=gridRF$num.trees[grid_idx],
+                                      compute.oob.predictions=FALSE),
                               error=function(e) data.frame(realized=NA_real_,
                                                            crps=NA_real_,
                                                            PIT=NA_real_,
@@ -139,32 +136,31 @@ for(splitting.rule in DRF$splitting.rule){
                                                            q0.95=NA_real_))
       
       # assign to result matrix
-      tmp_fill_idx <- (cnt-1)*real_nfc_sum+real_nfc_cumsum[i]+1:nrow(fc_drf_roll)
-      fc_drfMat[tmp_fill_idx,  ] <- fc_drf_roll%>% as.matrix()
+      tmp_fill_idx <- (grid_idx-1)*real_nfc_sum+real_nfc_cumsum[i]+1:nrow(fc_drf_roll)
+      fc_drfMat[tmp_fill_idx, 1] <- gridRF$num.trees[grid_idx]
+      fc_drfMat[tmp_fill_idx, 2] <- gridRF$min.node.size[grid_idx]
+      fc_drfMat[tmp_fill_idx, 3] <- gridRF$mtry[grid_idx]
+      fc_drfMat[tmp_fill_idx,-(1:3)] <- fc_drf_roll%>% as.matrix()
       fc_drfChar[tmp_fill_idx,1] <- rownames(fc_drf_roll)
       fc_drfChar[tmp_fill_idx,2] <- target
       fc_drfChar[tmp_fill_idx,3] <- splitting.rule
       
-      # temporary save because sometimes R session is aborted
-      if(i%%26==25) save(fc_drfMat,fc_drfChar,i,splitting.rule, file = "tmp_fc_drf.RData")
       
       # update progress bar
       pb$tick()
     }
     
+    # temporary save because sometimes R session is aborted
+    if(i%%10==9) save(fc_drfMat,fc_drfChar,i,splitting.rule, file = "tmp_fc_drf.RData")
     
   }
   
   
   
-  # update counter
-  cnt <- cnt + 1
+  
 }
 # close
-if(parallel){
-  stopCluster(cl)
-  pb$terminate()
-}
+pb$terminate()
 print(Sys.time()-tic)
 
 # compute normal crps
@@ -175,6 +171,6 @@ fc_drf <- data.frame(fc_drfChar,fc_drfMat) %>%
   na.omit
 
 # save drf forecasts
-save(fc_drf, file = paste0(creationDataDate,"DRF_Var14_FcW",DRF$window.size,
+save(fc_drf, file = paste0(creationDataDate,"tuneExtensiveDRF_Var14_FcW",DRF$window.size,
                            ifelse(permitSmallerW,"lower",""),
                            "Nfc",DRF$n_fc,"Corsi",DRF$corsi.freq,".RData"))

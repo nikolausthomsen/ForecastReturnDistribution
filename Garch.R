@@ -7,8 +7,8 @@ source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 source(file.path(func_path,"func_Pred.R"))
 
 # load packages
-library(rugarch)
-library(xts)
+library(rugarch, quietly = TRUE)
+library(xts, quietly = TRUE)
 library(progress)
 library(scoringRules)
 
@@ -44,13 +44,15 @@ dat <- xts(x = dat %>% select(all_of(first_target_idx:last_target_idx)),
 
 # find start of each series
 beginIdx <- getFirstNonNaIdx(dat)
+# find ent of each series
+endIdx <- getLastNonNaIdx(dat)
 # get the real number of n_fc
-real_nfc <- pmin(nrow(dat)-w_max-beginIdx+1,sGarch$n_fc)
+real_nfc <- pmin(endIdx-ifelse(permitSmallerW,0,w_max)-beginIdx+1,sGarch$n_fc)
 # keep all with positive number of real_nfc
 dat <- dat[,real_nfc>0]
 beginIdx <- beginIdx[real_nfc>0]
+endIdx <- endIdx[real_nfc>0]
 real_nfc <- real_nfc[real_nfc>0]
-
 
 # initialize stuff
 name_dat <- names(dat)
@@ -58,6 +60,9 @@ n_dat <- nrow(dat)
 p_dat <- ncol(dat)
 real_nfc_sum <- sum(real_nfc)
 nfc_idx_helper <- c(0,cumsum(real_nfc))
+
+# print time series that end earlier than expected
+cat("Time series that end earlier: ", names(endIdx)[endIdx<n_dat],"\n", sep="")
 
 # number of available clusters
 cl <- makeCluster(detectCores()-2)
@@ -94,7 +99,7 @@ for(w in sGarch$window.size){
       # predict via garch
       tmp <- garch(
         spec = garchspec,
-        data = dat[beginIdx[target_idx]:n_dat,target_idx],
+        data = dat[beginIdx[target_idx]:endIdx[target_idx],target_idx],
         forecast.length = real_nfc[target_idx],
         refit.every = sGarch$refit.every,
         refit.window = sGarch$refit.window,
@@ -122,7 +127,7 @@ for(w in sGarch$window.size){
   # close progress bar
   pb$terminate()
   # combine dataframes
-  fc_garch <- data.frame(fc_garchChar,fc_garchMat)
+  fc_garch <- data.frame(fc_garchChar,fc_garchMat) %>% na.omit()
   rm(fc_garchChar,fc_garchMat)
   
   # evaluate forecasts
@@ -130,23 +135,23 @@ for(w in sGarch$window.size){
     mutate(
       date = as.Date(date),
       Name = str_remove(Name,"^adjusted\\_"),
-      crps = if_else(str_detect(Model,"ngarch"),
+      crps = ifelse(str_detect(Model,"ngarch"),
                      crps_norm(Realized,Mu,Sigma),
                      crps_t(Realized,Shape,Mu,Sigma)),
-      PIT = if_else(str_detect(Model,"ngarch"),
-                    pnorm(Realized,Mu,Sigma),
-                    pdist("std",Realized,Mu,Sigma,shape=Shape)),
-      q1 = if_else(str_detect(Model,"ngarch"),
-                   qnorm(sGarch$q[1],Mu,Sigma),
-                   qdist("std",sGarch$q[1],Mu,Sigma,shape = Shape)),
-      q2 = if_else(str_detect(Model,"ngarch"),
-                   qnorm(sGarch$q[2],Mu,Sigma),
-                   qdist("std",sGarch$q[2],Mu,Sigma,shape = Shape))
+      PIT = ifelse(str_detect(Model,"ngarch"),
+                   pnorm(Realized,Mu,Sigma),
+                   pdist("std",Realized,Mu,Sigma,shape=Shape)),
+      q1 = ifelse(str_detect(Model,"ngarch"),
+                  qnorm(sGarch$q[1],Mu,Sigma),
+                  qdist("std",sGarch$q[1],Mu,Sigma,shape = Shape)),
+      q2 = ifelse(str_detect(Model,"ngarch"),
+                  qnorm(sGarch$q[2],Mu,Sigma),
+                  qdist("std",sGarch$q[2],Mu,Sigma,shape = Shape))
     )
   colnames(fc_garch)[ncol(fc_garch)-1:0] <- paste0("q",sGarch$q)
   
   # save garch forecasts
-  save(fc_garch, file = paste0(creationDataDate,"Garch_FcW",w,"Nfc",sGarch$n_fc,".RData"))
+  save(fc_garch, file = paste0(creationDataDate,"Garch_FcW",w,ifelse(permitSmallerW,"lower",""),"Nfc",sGarch$n_fc,".RData"))
 }
 
 # close clusters

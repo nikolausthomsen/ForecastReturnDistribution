@@ -1,12 +1,13 @@
 # functions for Results.R
 
-joinFcDfs <- function(creationDataDate,HS,sGarch,DRF){
+joinFcDfs <- function(creationDataDate,HS,sGarch,DRF,permitSmallerW=FALSE){
   commonCols <- c("date","Name")
   cols <- c(commonCols,"Realized","crps","PIT",paste0("q",HS$q))
   files <- paste0(creationDataDate,
                   c("HS","Garch","DRF_Var14"),
                   "_FcW",
                   c(HS$window.size,sGarch$window.size,DRF$window.size),
+                  if(permitSmallerW) c("",rep("lower",2)) else "",
                   c("","Nfc","Nfc"),
                   c("",sGarch$n_fc,DRF$n_fc),
                   c("","",paste0("Corsi",DRF$corsi.freq)),

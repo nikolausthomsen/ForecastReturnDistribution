@@ -24,12 +24,15 @@ if(any(list.files()=="creationDataDate")){
   creationDataDate <- "2022_04_01_"
 }
 
-# set number of forecasts
+# set temporary variables
 n_fc <- sum(timeDate::isBizday(
   timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
                               to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
                               by=1))))
 q <- c(.05,.95)
+
+# permit smaller window sizes?
+permitSmallerW <- TRUE
 
 
 
@@ -71,3 +74,7 @@ DRF <- list(
   corsi.freq = "m",
   q = q
 )
+
+
+# delete some temporary variables
+rm(n_fc)

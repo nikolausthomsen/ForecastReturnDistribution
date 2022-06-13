@@ -144,7 +144,6 @@ fitroll <- function(func,data,
       tmp_real_window <- tmp$weights@Dim[2]
       # yhat weights
       w_yhat <- matrix(tmp$weights,nrow=tmp_num.fc, ncol=tmp_real_window)
-      if(fc_idx!=forecast.length && tmp_real_window!=window.size) stop()
       # yhat coefs (repeat the values of yhat in each row)
       yhat <- matrix(tmp$y, nrow=tmp_num.fc, ncol=tmp_real_window, byrow=TRUE)
       # save realized values
@@ -216,6 +215,21 @@ getFirstNonNaIdx <- function(df){
   # loop over all names
   for(i in 1:p){
     out[i] <- suppressWarnings(min(which( is.na(lag(df[,i])) & !is.na(df[,i]) )))
+  }
+  out
+}
+
+# helper function to get the last non NA index of a time series
+getLastNonNaIdx <- function(df){
+  # dimensions without date column
+  p <- ncol(df)
+  # initialize output
+  out <- numeric(p)
+  names(out) <- names(df)
+  if(!is.data.frame(df)) df <- data.frame(df)
+  # loop over all names
+  for(i in 1:p){
+    out[i] <- suppressWarnings(max(which( is.na(lead(df[,i])) & !is.na(df[,i]) )))
   }
   out
 }
