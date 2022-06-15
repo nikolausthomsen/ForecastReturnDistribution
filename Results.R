@@ -24,34 +24,12 @@ if(!permitSmallerW){
 }
 
 # make tables
-countCrpsPerStock <- fc %>% 
-  group_by(Model,Name) %>% 
-  summarise(avg.crps=mean(crps)) %>% 
-  tidyr::pivot_wider(id_cols="Name", names_from = "Model", values_from = "avg.crps") %>% 
-  mutate(cntHS=DRF<=HS,
-         cntnGarch=DRF<=ngarch,
-         cnttGarch=DRF<=tgarch) %>% 
-  summarise(mean(cntHS),
-            mean(cntnGarch),
-            mean(cnttGarch),
-            n=n()) %>% 
-  mutate(across(-n, ~ round(.*100, digits = 2)))
-evaluationTable <- fc %>% group_by(Name,Model) %>% 
-  summarise(crps=mean(crps),
-            avg.90QR=mean(q0.95-q0.05),
-            avg.90Cover=mean((q0.05<=Realized)&(Realized<=q0.95)),
-            n=n()) %>% 
-  group_by(Model) %>% 
-  summarise(avg.crps=mean(crps),
-            median.crps=median(crps),
-            avg.90QR = mean(avg.90QR),
-            avg.90Cover = round(mean(avg.90Cover)*100, digits = 2),
-            n = sum(n)) %>% 
-  arrange(avg.crps) %>% 
-  ungroup %>% mutate(across(-c("Model","avg.90Cover","n"), function(x) round(x, digits = 5)*100))
+countCrpsPerStockLower <- countCrpsPerStock(fc)
+
+evalTable <- evaluationTable(fc)
 
 # save tables
-Hmisc::latex(evaluationTable,
+Hmisc::latex(evalTable,
              rowlabel="Rank",
              colheads = c("Model", "$CRPS^{avg}$","$CRPS^{med}$","$\\overline{L}_{0.9}$","$CR_{0.9}$","n"),
              caption.lot = "Evaluation of the four distributional forecast models on the new test set",
@@ -63,7 +41,7 @@ Hmisc::latex(evaluationTable,
                               ifelse(permitSmallerW," I allow also smaller window sizes to stick to the 102 stocks.","")),
              file=file.path(latexTab_path,paste0(creationDataDate,"EvalTab",ifelse(permitSmallerW,"Wlower",""),".tex")),
              label = paste0("Tab:FinalEval", ifelse(permitSmallerW,"Wlower","")))
-Hmisc::latex(countCrpsPerStock,
+Hmisc::latex(countCrpsPerStockLower,
              rowname=NULL,
              colheads = c("$\\Lambda^{hs}$","$\\Lambda^{ngarch}$","$\\Lambda^{tgarch}$","Number of Stocks"),
              caption = paste0("Describes the count ratio: how many time average CRPS scores of stocks are 

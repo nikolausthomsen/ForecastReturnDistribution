@@ -1,7 +1,7 @@
 # tuned DRF model to come up with advancter model than in preregistration
 
 # - USE THE SPARSE VERSION OF INPUTS AFTER SEEING THE FEATURE IMPORTANCE FROM UNKNOWN TEST SET
-# - TUNE mty AND min.node.size ON KNOWN TEST SET
+# - TUNE ntree, mtry AND min.node.size ON KNOWN TEST SET
 
 # run config file
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
@@ -9,29 +9,58 @@ source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 # import prediction and evaluation functions
 source(file.path(func_path,"func_Pred.R"))
 
-# faster performance (otherwise tuning would take much longer)
-permitSmallerW <- FALSE
-DRF <- list(
-  splitting.rule = "CART",
-  window.size = 1000,
-  num.trees = c(500,1000,1500),
-  min.node.size = c(15,20),
-  mtry = c(floor(sqrt(9)),5,min(ceiling(sqrt(9) + 20), 9)),
-  n_fc = 250,
-  refit.every = 50,
-  n_lags = 1,
-  absolute.inputs = TRUE,
-  corsi.freq = "m",
-  q = c(.05,.95)
-)
+# tune the Model
+# - slim: only the 3 most important variables are included and evaluated on UNKNOWN test set
+# - tuneAll: 3 most important variables, and all grids are tuned on KNOWN test set
+# - tuned: 3 most important variables, and best grid from "tuneAll" are evaluated on UNKNOWN test set
+tuneModel <- "tuneAll"
+
+if(tuneModel=="tuneAll"){
+  # faster performance (otherwise tuning would take much longer)
+  permitSmallerW <- FALSE
+  DRF <- list(
+    splitting.rule = "CART",
+    window.size = 1000,
+    num.trees = c(500,1000,1500),
+    min.node.size = c(15,20),
+    mtry = c(floor(sqrt(9)),5,min(ceiling(sqrt(9) + 20), 9)),
+    n_fc = 250,
+    refit.every = 50,
+    n_lags = 1,
+    absolute.inputs = TRUE,
+    corsi.freq = "m",
+    q = c(.05,.95)
+  )
+  # read data without the unknown test set
+  dat <- readRDS(paste0(str_remove(input_path,"ForecastReturnDistribution"),"2022_03_31_NAFilledData.rds"))
+}else if(tuneModel=="tuned"){
+  # evaluate tuned model on unknown test set
+  permitSmallerW <- TRUE
+  DRF$num.trees <- 1000
+  DRF$min.node.size <- 20
+  DRF$mtry <- floor(sqrt(9))
+
+  # read data including unknown test set
+  dat <- readRDS(paste0(creationDataDate,"NAFilledData.rds"))
+}else if(tuneModel=="slim"){
+  # evaluate tuned model on unknown test set
+  permitSmallerW <- TRUE
+  # default params of DRF function
+  DRF$num.trees <- 500
+  DRF$min.node.size <- 15
+  DRF$mtry <-  min(ceiling(sqrt(9) + 20), 9)
+  
+  # read data including unknown test set
+  dat <- readRDS(paste0(creationDataDate,"NAFilledData.rds"))
+}else stop("tuneModel not implemented. Choose from: tuneAll, tuned, slim")
+
 
 # load packages
 library(RcppRoll)
 library(progress)
 library(foreach)
 
-# read data without the unknown test set
-dat <- readRDS(paste0(str_remove(input_path,"ForecastReturnDistribution"),"2022_03_31_NAFilledData.rds"))
+
 
 # now select only R, HML, and IXIC as predictors
 name_dat <- names(dat)
@@ -115,7 +144,7 @@ tic <- Sys.time()
 
 # predict via drf
 for(splitting.rule in DRF$splitting.rule){
-  for(i in 80:p_target){
+  for(i in 1:p_target){
     target <- name_target[i]
     incl_var <- c("date",name_vola,str_subset(name_dat,str_remove(target,"^adjusted\\_")))
     for(grid_idx in 1:n_grid){
@@ -171,6 +200,6 @@ fc_drf <- data.frame(fc_drfChar,fc_drfMat) %>%
   na.omit
 
 # save drf forecasts
-save(fc_drf, file = paste0(creationDataDate,"tuneExtensiveDRF_Var14_FcW",DRF$window.size,
+save(fc_drf, file = paste0(creationDataDate,tuneModel,"DRF_Var14_FcW",DRF$window.size,
                            ifelse(permitSmallerW,"lower",""),
                            "Nfc",DRF$n_fc,"Corsi",DRF$corsi.freq,".RData"))

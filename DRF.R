@@ -106,7 +106,8 @@ for(splitting.rule in DRF$splitting.rule){
                           lag = DRF$n_lags, forecast.length = real_nfc[target],
                           window.size = DRF$window.size, refit.every = DRF$refit.every,
                           crps = TRUE, quantiles = DRF$q, abs.inputs = DRF$absolute.inputs,
-                          splitting.rule=splitting.rule),
+                          splitting.rule=splitting.rule,
+                          compute.oob.predictions=FALSE),
                   Name = target),
                   error=function(e){print(e); NULL}
                 )
@@ -129,7 +130,8 @@ for(splitting.rule in DRF$splitting.rule){
                                       lag = DRF$n_lags, forecast.length = real_nfc[target],
                                       window.size = DRF$window.size, refit.every = DRF$refit.every,
                                       crps = TRUE, quantiles = DRF$q, abs.inputs = DRF$absolute.inputs,
-                                      splitting.rule=splitting.rule),
+                                      splitting.rule=splitting.rule,
+                                      compute.oob.predictions=FALSE),
                               error=function(e) data.frame(realized=NA_real_,
                                                            crps=NA_real_,
                                                            PIT=NA_real_,
