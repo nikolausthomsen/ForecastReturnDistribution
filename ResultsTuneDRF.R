@@ -4,7 +4,7 @@
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 
 # import result functions
-source(file.path(func_path,"func_Results.R"))
+source(file.path(path$func,"func_Results.R"))
 
 load("2022_06_11_tuneAllDRF_Var14_FcW1000Nfc250Corsim.RData")
 
@@ -24,7 +24,7 @@ colnames(tune) <- colnames(tune) %>% str_replace("^num.trees$","ntree")
 # -> num.trees=1000, mtry=3, min.node.size=20
 Hmisc::latex(tune,
              title="tune, ResultsTuneDRF.R",
-             file=file.path(latexTab_path,"tuneAll.tex"),
+             file=file.path(path$latexTab,"tuneAll.tex"),
              rowlabel="Rank",
              math.col.names=TRUE,
              size="small",
@@ -71,7 +71,7 @@ evalTable <- evaluationTable(fc)
 
 Hmisc::latex(countCrpsLower,
              title="countCrpsLower, ResultsTuneDRF.R",
-             file=file.path(latexTab_path,"countCrpsLowerTunedDRF.tex"),
+             file=file.path(path$latexTab,"countCrpsLowerTunedDRF.tex"),
              rowname=NULL,
              colheads = c("Reference","$\\Lambda^{hs}$","$\\Lambda^{ngarch}$","$\\Lambda^{tgarch}$","Number of Stocks","start","end"),
              caption.lot = "Describes the count ratio including tuned DRF models",
@@ -84,7 +84,7 @@ Hmisc::latex(countCrpsLower,
 
 Hmisc::latex(evalTable,
              title="evalTable, ResultsTuneDRF.R",
-             file=file.path(latexTab_path,"evalTabTunedDRF.tex"),
+             file=file.path(path$latexTab,"evalTabTunedDRF.tex"),
              rowlabel="Rank",
              colheads = c("Model", "$CRPS^{avg}$","$CRPS^{med}$","$\\overline{L}_{0.9}$","$CR_{0.9}$","n"),
              caption.lot = "Evaluation of the four initial distributional forecast models and two adjusted DRF models on the new test set",

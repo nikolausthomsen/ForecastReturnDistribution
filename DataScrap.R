@@ -4,7 +4,7 @@
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 
 # import data scrap function
-source(file.path(func_path,"func_dataScrap.R"))
+source(file.path(path$func,"func_dataScrap.R"))
 
 # load packages
 library(tidyr)

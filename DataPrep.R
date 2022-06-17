@@ -4,7 +4,7 @@
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 
 # import preparation functions
-source(file.path(func_path,"func_DataPrep.R"))
+source(file.path(path$func,"func_DataPrep.R"))
 
 # load packages
 library(tidyr)

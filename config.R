@@ -5,13 +5,17 @@ rm(list=ls())
 graphics.off()
 
 # set path
-input_path <- "/Users/justusthomsen/Documents/Masterthesis/Data/ForecastReturnDistribution"
-func_path <- "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution/functions"
-coding_path <- "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution"
-latexPic_path <- "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Pictures"
-latexTab_path <- "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Tables"
+path <- list(
+  input = "/Users/justusthomsen/Documents/Masterthesis/Data/ForecastReturnDistribution",
+  func = "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution/functions",
+  coding = "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution",
+  latexPic = "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Pictures",
+  latexTab = "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Tables"
+)
+
+
 # set working directory
-setwd(input_path)
+setwd(path$input)
 
 # packages that are always required
 library(dplyr, quietly = TRUE)
@@ -25,10 +29,13 @@ if(any(list.files()=="creationDataDate")){
 }
 
 # set temporary variables
-n_fc <- sum(timeDate::isBizday(
-  timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
-                              to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
-                              by=1))))
+n_fc <- ifelse(TRUE,
+               sum(timeDate::isBizday(
+                 timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
+                                             to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
+                                             by=1)))),
+               4
+  )
 q <- c(.05,.95)
 
 # permit smaller window sizes?

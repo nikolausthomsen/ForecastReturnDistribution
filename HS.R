@@ -4,7 +4,7 @@
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 
 # import prediction and evaluation functions
-source(file.path(func_path,"func_Pred.R"))
+source(file.path(path$func,"func_Pred.R"))
 
 # load packages
 library(tidyr)

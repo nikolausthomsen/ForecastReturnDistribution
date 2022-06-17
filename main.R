@@ -1,22 +1,22 @@
 # main file to run all models
 
 # path for the main files
-coding_path <- "~/Documents/Masterthesis/ForecastReturnDistribution"
+path <- list(coding="~/Documents/Masterthesis/ForecastReturnDistribution")
 
 # scrap data
-source(file.path(coding_path,"DataScrap.R"))
+source(file.path(path$coding,"DataScrap.R"))
 
 # prepare data
-source(file.path(coding_path,"DataPrep.R"))
+source(file.path(path$coding,"DataPrep.R"))
 
 # predict via historic simulation
-source(file.path(coding_path,"HS.R"))
+source(file.path(path$coding,"HS.R"))
 
 # predict via garch model
-source(file.path(coding_path,"Garch.R"))
+source(file.path(path$coding,"Garch.R"))
 
 # predict via drf
-source(file.path(coding_path,"DRF.R"))
+source(file.path(path$coding,"DRF.R"))
 
 # evaluate results
-source(file.path(coding_path,"Results.R"))
+source(file.path(path$coding,"Results.R"))

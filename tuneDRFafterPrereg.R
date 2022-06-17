@@ -7,7 +7,7 @@
 source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
 
 # import prediction and evaluation functions
-source(file.path(func_path,"func_Pred.R"))
+source(file.path(path$func,"func_Pred.R"))
 
 # tune the Model
 # - slim: only the 3 most important variables are included and evaluated on UNKNOWN test set
@@ -32,7 +32,7 @@ if(tuneModel=="tuneAll"){
     q = c(.05,.95)
   )
   # read data without the unknown test set
-  dat <- readRDS(paste0(str_remove(input_path,"ForecastReturnDistribution"),"2022_03_31_NAFilledData.rds"))
+  dat <- readRDS(paste0(str_remove(path$input,"ForecastReturnDistribution"),"2022_03_31_NAFilledData.rds"))
 }else if(tuneModel=="tuned"){
   # evaluate tuned model on unknown test set
   permitSmallerW <- TRUE
