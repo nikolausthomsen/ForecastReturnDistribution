@@ -47,7 +47,7 @@ fc <- joinFcDfs(creationDataDate,HS,sGarch,DRF,TRUE,outputCommonDateName = TRUE)
 if(!permitSmallerW){
   fc <- lapply(fc, function(dat) datPermitNoSmallerW(dat))
 }
-load(paste0(creationDataDate,"besttuneExtensiveDRF_Var14_FcW",DRF$window.size,"lowerNfc",DRF$n_fc,"Corsi",DRF$corsi.freq,".RData"))
+load(paste0(creationDataDate,"tunedDRF_Var14_FcW",DRF$window.size,"lowerNfc",DRF$n_fc,"Corsi",DRF$corsi.freq,".RData"))
 tmpTuned <- inner_join(data.frame(fc$commonDateName,Model="tunedDRF"),
                   fc_drf %>% select(date,Name,Realized,crps,PIT,q0.05,q0.95),
                   by=c("date","Name"))

@@ -13,7 +13,8 @@ source(file.path(path$func,"func_Pred.R"))
 # - slim: only the 3 most important variables are included and evaluated on UNKNOWN test set
 # - tuneAll: 3 most important variables, and all grids are tuned on KNOWN test set
 # - tuned: 3 most important variables, and best grid from "tuneAll" are evaluated on UNKNOWN test set
-tuneModel <- "tuneAll"
+tuneModel <- "tuned"
+DRF$n_fc <- 4
 
 if(tuneModel=="tuneAll"){
   # faster performance (otherwise tuning would take much longer)

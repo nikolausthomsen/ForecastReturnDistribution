@@ -29,13 +29,10 @@ if(any(list.files()=="creationDataDate")){
 }
 
 # set temporary variables
-n_fc <- ifelse(TRUE,
-               sum(timeDate::isBizday(
-                 timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
-                                             to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
-                                             by=1)))),
-               4
-  )
+n_fc <- sum(timeDate::isBizday(
+  timeDate::timeDate(seq.Date(from = as.Date("2022-04-01"), 
+                              to = as.Date(str_replace_all(creationDataDate,"\\_","-")),
+                              by=1))))
 q <- c(.05,.95)
 
 # permit smaller window sizes?

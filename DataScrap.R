@@ -95,10 +95,16 @@ if(max(na_frac)>=1) print(data.frame(dates.missing=dat$date[na_frac>=1]))
 # delete rows if they just include NAs
 dat <- dat %>% filter(na_frac < 1)
 
+# only consider the dates before 2022-06-16 for the preregistration
+#  (if you want to observe effects on newer data, just delete below, and 
+#   the ifelse statement for creationDataDate with only Sys.Date())
+dat <- dat %>% filter(date < as.Date("2022-06-16"))
 
 ##### Save Data set #####
 
 # save data
-creationDataDate <- paste0(str_replace_all(Sys.Date(),"-","_"),"_")
+creationDataDate <- paste0(str_replace_all(ifelse(Sys.Date()>as.Date("2022-06-16"),
+                                                  as.Date("2022-06-15"),
+                                                  Sys.Date()),"-","_"),"_")
 saveRDS(dat, file=paste0(creationDataDate,"rawData.rds"))
 save(creationDataDate, file="creationDataDate")
