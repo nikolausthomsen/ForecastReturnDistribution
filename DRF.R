@@ -38,7 +38,7 @@ if(DRF$corsi.freq!=""){
   }
   DRF$n_lags <- 1
 }
-# fine end of each time series
+# find end of each time series
 endIdx <- getLastNonNaIdx(dat)
 # get the real number of n_fc
 real_nfc <- pmin(endIdx-ifelse(permitSmallerW,0,DRF$window.size)-beginIdx+1,DRF$n_fc)

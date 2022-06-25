@@ -44,7 +44,7 @@ Hmisc::latex(evalTable,
 Hmisc::latex(countCrpsPerStockLower,
              rowname=NULL,
              colheads = c("$\\Lambda^{hs}$","$\\Lambda^{ngarch}$","$\\Lambda^{tgarch}$","Number of Stocks","$start$","$end$"),
-             caption = paste0("Describes the count ratio: how many time average CRPS scores of stocks are 
+             caption = paste0("Describes the count ratio: share of how many time average CRPS scores of stocks are 
                               lower for DRF than for any other method. All count ratios are given in \\%. 
                               A value greater the 50\\% implys a preference for the DRF method.",
                               ifelse(permitSmallerW," I allow also smaller window sizes to stick to the 102 stocks.","")),
