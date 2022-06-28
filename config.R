@@ -6,11 +6,11 @@ graphics.off()
 
 # set path
 path <- list(
-  input = "/Users/justusthomsen/Documents/Masterthesis/Data/ForecastReturnDistribution",
-  func = "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution/functions",
-  coding = "/Users/justusthomsen/Documents/Masterthesis/ForecastReturnDistribution",
-  latexPic = "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Pictures",
-  latexTab = "/Users/justusthomsen/Documents/Masterthesis/ReturnDistributionViaEnsemble/Latex/Thesis/sections/Tables"
+  input = "~/ForecastReturnDistribution",
+  func = "~/ForecastReturnDistribution/functions",
+  coding = "~/ForecastReturnDistribution",
+  latexPic = "~/",
+  latexTab = "~/"
 )
 
 

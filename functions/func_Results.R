@@ -1,5 +1,6 @@
 # functions for Results.R
 
+
 joinFcDfs <- function(creationDataDate,HS,sGarch,DRF,permitSmallerW=FALSE,outputCommonDateName=FALSE){
   commonCols <- c("date","Name")
   cols <- c(commonCols,"Realized","crps","PIT",paste0("q",HS$q))
@@ -45,6 +46,7 @@ countCrpsPerStock <- function(dat){
     mutate(across(-n, ~ round(.*100, digits = 2)), start, end)
 }
 
+
 datPermitNoSmallerW <- function(dat){
   ticker <- c("AMD","ADBE","ALGN","AMZN","AMGN","AEP","ADI","ANSS","AAPL","AMAT","ASML","TEAM","ADSK","ATVI" 
               ,"ADP","AVGO","BIDU","BIIB","BMRN","BKNG","CDNS","CDW","CERN","CHKP","CHTR","CPRT","CTAS","CSCO" 
@@ -56,6 +58,7 @@ datPermitNoSmallerW <- function(dat){
   dat <- dat %>% filter(Name %in% ticker)
   return(dat)
 }
+
 
 evaluationTable <- function(dat){
   dat %>% group_by(Name,Model) %>% 

@@ -1,7 +1,7 @@
 # Make nice plots and tables
 
 # run config file
-source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
+source("~/ForecastReturnDistribution/config.R")
 
 # import result functions
 source(file.path(path$func,"func_Results.R"))

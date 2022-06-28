@@ -1,6 +1,7 @@
 # functions for prediction and evaluation (HS.R,Garch.R,DRF.R)
 
 
+
 ##### Prediction Functions #####
 
 garch <- function(spec, data, n.ahead = 1, forecast.length = 500, 
@@ -38,6 +39,7 @@ garch <- function(spec, data, n.ahead = 1, forecast.length = 500,
   return(tmp)
   
 }
+
 
 fitDRF <- function(dataMat, yColIdx, h,
                    lag = 3,

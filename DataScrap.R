@@ -1,7 +1,7 @@
 # Data scrapping of stock prices and volatility data
 
 # run config file
-source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
+source("~/ForecastReturnDistribution/config.R")
 
 # import data scrap function
 source(file.path(path$func,"func_dataScrap.R"))

@@ -15,6 +15,7 @@ scrapZipCsvData <- function(url,...){
   return(data)
 }
 
+
 fredr::fredr_set_key(suppressWarnings(read.delim(file="fredrKey.txt",header=FALSE)$V1))
 fredr <- function(
   series,

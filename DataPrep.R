@@ -1,7 +1,7 @@
 # Data transformation and NA handling
 
 # run config file
-source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
+source("~/ForecastReturnDistribution/config.R")
 
 # import preparation functions
 source(file.path(path$func,"func_DataPrep.R"))

@@ -1,7 +1,7 @@
 # Garch Models
 
 # run config file
-source("~/Documents/Masterthesis/ForecastReturnDistribution/config.R")
+source("~/ForecastReturnDistribution/config.R")
 
 # import prediction and evaluation functions
 source(file.path(path$func,"func_Pred.R"))

@@ -1,7 +1,7 @@
 # main file to run all models
 
 # path for the main files
-path <- list(coding="~/Documents/Masterthesis/ForecastReturnDistribution")
+path <- list(coding="~/ForecastReturnDistribution")
 
 # scrap data
 source(file.path(path$coding,"DataScrap.R"))
